@@ -14,14 +14,14 @@ func TestPlayer_Rate(t *testing.T) {
 		input string
 		want  RatingAction
 	}{
-		{"nothing", "\n", RatingAction{0, true, false, false}},
-		{"rating", "2\n", RatingAction{2, false, false, false}},
-		{"rating resume", "2r\n", RatingAction{2, false, true, false}},
-		{"rating resume 2", "2 r\n", RatingAction{2, false, true, false}},
-		{"resume", "2 r\n", RatingAction{2, false, true, false}},
-		{"rating quit", "2 q\n", RatingAction{2, false, false, true}},
-		{"rating quit 2", "2q\n", RatingAction{2, false, false, true}},
-		{"quit", "q\n", RatingAction{0, true, false, true}},
+		{"nothing", "\n", RatingAction{0, false, false}},
+		{"rating", "2\n", RatingAction{2, false, false}},
+		{"rating resume", "2r\n", RatingAction{2, true, false}},
+		{"rating resume 2", "2 r\n", RatingAction{2, true, false}},
+		{"resume", "2 r\n", RatingAction{2, true, false}},
+		{"rating quit", "2 q\n", RatingAction{2, false, true}},
+		{"rating quit 2", "2q\n", RatingAction{2, false, true}},
+		{"quit", "q\n", RatingAction{0, false, true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,11 +43,11 @@ func TestPlayer_getArgs(t *testing.T) {
 		want    []string
 	}{
 		{"one play", 1, songrep.Song{AbsPath: "/foo/bar.brstm"}, []string{"mplayer", "/foo/bar.brstm"}},
-		{"one play", 1, songrep.Song{AbsPath: "/foo/bar.brstm", EndLoopMilli: 1000}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "1000"}},
+		{"one play", 1, songrep.Song{AbsPath: "/foo/bar.brstm", LoopEndMicro: 1234}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "0.001234"}},
 		{"2 plays", 2, songrep.Song{AbsPath: "/foo/bar.brstm"}, []string{"mplayer", "/foo/bar.brstm", "/foo/bar.brstm", "-loop", "1"}},
-		{"2 plays", 2, songrep.Song{AbsPath: "/foo/bar.brstm", StartLoopMilli: 200}, []string{"mplayer", "/foo/bar.brstm", "/foo/bar.brstm", "-ss", "200", "-loop", "1"}},
-		{"2 plays", 2, songrep.Song{AbsPath: "/foo/bar.brstm", StartLoopMilli: 200, EndLoopMilli: 1000}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "1000", "/foo/bar.brstm", "-ss", "200", "-endpos", "1000", "-loop", "1"}},
-		{"infinite loop", 0, songrep.Song{AbsPath: "/foo/bar.brstm", StartLoopMilli: 200, EndLoopMilli: 1000}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "1000", "/foo/bar.brstm", "-ss", "200", "-endpos", "1000", "-loop", "0"}},
+		{"2 plays", 2, songrep.Song{AbsPath: "/foo/bar.brstm", LoopStartMicro: 1234567}, []string{"mplayer", "/foo/bar.brstm", "/foo/bar.brstm", "-ss", "1.234567", "-loop", "1"}},
+		{"2 plays", 2, songrep.Song{AbsPath: "/foo/bar.brstm", LoopStartMicro: 1234567, LoopEndMicro: 7654321}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "7.654321", "/foo/bar.brstm", "-ss", "1.234567", "-endpos", "7.654321", "-loop", "1"}},
+		{"infinite loop", 0, songrep.Song{AbsPath: "/foo/bar.brstm", LoopStartMicro: 1234567, LoopEndMicro: 7654321}, []string{"mplayer", "/foo/bar.brstm", "-endpos", "7.654321", "/foo/bar.brstm", "-ss", "1.234567", "-endpos", "7.654321", "-loop", "0"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -31,18 +31,16 @@ func TestInMemorySongRepository_getFirstFilteredSong(t *testing.T) {
 	game1 := Game{Title: "foo abc"}
 	game2 := Game{Title: "foo def"}
 	songs := []Song{
-		{Title: "bar ghi", Game: &game1, DurationSec: 10, Path: "foo"}, // rank: 2
-		{Title: "bar jkl", Game: &game1, DurationSec: 20, Path: "bar"}, // rank: 1
-		{Title: "bar mno", Game: &game2, DurationSec: 30, Path: "baz"}, // rank: 0
-		{Title: "bar pqr", Game: &game2, DurationSec: 40, Path: "biz"}, // rank: 3
+		{Title: "bar ghi", Game: &game1, DurationSec: 10, Path: "foo"}, // "shuffled index": 2
+		{Title: "bar jkl", Game: &game1, DurationSec: 20, Path: "bar"}, // "shuffled index": 1
+		{Title: "bar mno", Game: &game2, DurationSec: 30, Path: "baz"}, // "shuffled index": 0
+		{Title: "bar pqr", Game: &game2, DurationSec: 40, Path: "biz"}, // "shuffled index": 3
 	}
 	ratings := InMemoryRatingRepository{
-		Plays: []Play{
-			{Path: "foo", Rating: 5, NoRating: false},
-			{Path: "foo", Rating: 0, NoRating: true},
-			{Path: "foo", Rating: 3, NoRating: false},
-			{Path: "biz", Rating: 2, NoRating: false},
-			{Path: "baz", Rating: 1, NoRating: false},
+		PlayedSongs: []PlayedSong{
+			{"foo", []Play{{Rating: 5}, {Rating: 0}, {Rating: 3}}},
+			{"biz", []Play{{Rating: 2}}},
+			{"baz", []Play{{Rating: 1}}},
 		},
 	}
 	tests := []struct {
@@ -121,17 +119,22 @@ func Test_parseFile(t *testing.T) {
 	}{
 		{"empty", "[]", []parsedSongs{}},
 		{
-			"empty",
-			"[{\"title\":\"abc\",\"game_title\":\"ABC\",\"duration\":1,\"start_loop\":2,\"end_loop\":3,\"path\":\"path1\"}]",
-			[]parsedSongs{{"abc", "ABC", 1, 2, 3, "path1"}},
+			"1 entry",
+			"[{\"path\":\"path1\",\"timestamp\":123,\"title\":\"abc\",\"game_title\":\"ABC\",\"duration\":1.23,\"loop_start\":2,\"loop_end\":3,\"size\":4,\"error\":false}]",
+			[]parsedSongs{{"path1", "abc", "ABC", 1.23, 2, 3, 4, false}},
 		},
 		{
-			"empty",
-			"[{\"title\":\"abc\",\"game_title\":\"ABC\",\"duration\":1,\"start_loop\":2,\"end_loop\":3,\"path\":\"path1\"},{\"title\":\"def\",\"game_title\":\"DEF\",\"duration\":4,\"start_loop\":5,\"end_loop\":6,\"path\":\"path2\"}]",
+			"2 entries",
+			"[{\"path\":\"path1\",\"timestamp\":123,\"title\":\"abc\",\"game_title\":\"ABC\",\"duration\":1,\"loop_start\":2,\"loop_end\":3,\"size\":4,\"error\":false},{\"path\":\"path2\",\"timestamp\":456,\"title\":\"def\",\"game_title\":\"DEF\",\"duration\":5,\"loop_start\":6,\"loop_end\":7,\"size\":8,\"error\":true}]",
 			[]parsedSongs{
-				{"abc", "ABC", 1, 2, 3, "path1"},
-				{"def", "DEF", 4, 5, 6, "path2"},
+				{"path1", "abc", "ABC", 1, 2, 3, 4, false},
+				{"path2", "def", "DEF", 5, 6, 7, 8, true},
 			},
+		},
+		{
+			"no title",
+			"[{\"path\":\"path1\",\"timestamp\":123,\"title\":null,\"game_title\":null,\"duration\":1,\"loop_start\":2,\"loop_end\":3,\"size\":4,\"error\":false}]",
+			[]parsedSongs{{"path1", "", "", 1, 2, 3, 4, false}},
 		},
 	}
 	for _, tt := range tests {
@@ -153,7 +156,7 @@ func TestSongsFromFiles(t *testing.T) {
 	want := []Song{
 		{"abc", &game1, 1, 2, 3, "hello/foo.brstm", cwd + "testdata/hello/foo.brstm", false},
 		{"def", &game2, 4, 5, 6, "bar.brstm", cwd + "testdata/bar.brstm", false},
-		{"abc", &game1, 1, 2, 3, "hello/foo.brstm", cwd + "testdata/abc/hello/foo.brstm", false},
+		{"abc", &game1, 1.23, 2, 3, "hello/foo.brstm", cwd + "testdata/abc/hello/foo.brstm", false},
 		{"def", &game2, 4, 5, 6, "bar.brstm", cwd + "testdata/abc/bar.brstm", false},
 	}
 	got := SongsFromFiles(files)

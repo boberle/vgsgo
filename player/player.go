@@ -21,7 +21,6 @@ type Player struct {
 
 type RatingAction struct {
 	Value  int
-	Ignore bool
 	Resume bool
 	Quit   bool
 }
@@ -47,7 +46,7 @@ func (p Player) Rate() RatingAction {
 
 		scanner := bufio.NewScanner(p.Input)
 		if scanner.Scan() {
-			pat, err := regexp.Compile(`^(?i:\s*(\d+)?\s*(r)?\s*(q)?)$`)
+			pat, err := regexp.Compile(`^(?i:\s*([12345]+)?\s*(r)?\s*(q)?)$`)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -58,12 +57,10 @@ func (p Player) Rate() RatingAction {
 				continue
 			}
 
-			var value int
-			var ignore, resume, quit bool
+			value := 0
+			var resume, quit bool
 			if matches[1] != "" {
 				value, _ = strconv.Atoi(matches[1])
-			} else {
-				ignore = true
 			}
 
 			if matches[2] != "" {
@@ -76,7 +73,6 @@ func (p Player) Rate() RatingAction {
 
 			return RatingAction{
 				Value:  value,
-				Ignore: ignore,
 				Resume: resume,
 				Quit:   quit,
 			}
@@ -90,21 +86,21 @@ func (p Player) getArgs(song songrep.Song) []string {
 
 	// first run (start from 0)
 	args = append(args, song.AbsPath)
-	if song.EndLoopMilli != 0 {
+	if song.LoopEndMicro != 0 {
 		args = append(args, "-endpos")
-		args = append(args, strconv.Itoa(song.EndLoopMilli))
+		args = append(args, fmt.Sprintf("%f", float32(song.LoopEndMicro)/1000000.0))
 	}
 
 	// other run (start from startLoop)
 	if p.MaxPlay != 1 {
 		args = append(args, song.AbsPath)
-		if song.StartLoopMilli != 0 {
+		if song.LoopStartMicro != 0 {
 			args = append(args, "-ss")
-			args = append(args, strconv.Itoa(song.StartLoopMilli))
+			args = append(args, fmt.Sprintf("%f", float32(song.LoopStartMicro)/1000000.0))
 		}
-		if song.EndLoopMilli != 0 {
+		if song.LoopEndMicro != 0 {
 			args = append(args, "-endpos")
-			args = append(args, strconv.Itoa(song.EndLoopMilli))
+			args = append(args, fmt.Sprintf("%f", float32(song.LoopEndMicro)/1000000.0))
 		}
 		args = append(args, "-loop")
 		if p.MaxPlay == 0 {

@@ -66,13 +66,14 @@ func run(songRep songrep.SongRepository, ratingRep songrep.RatingRepository, pla
 		}
 
 		actions := player.Rate()
-		ratingRep.AddPlay(song, int(time.Now().Unix()), actions.Value, actions.Ignore)
+		rating := actions.Value
+		ratingRep.AddPlay(song, int(time.Now().Unix()), rating)
 		if actions.Resume {
 			player.PlayIndefinitely(song)
 		}
 
 		// save rating db
-		fh, err := os.OpenFile(ratingFile, os.O_WRONLY|os.O_CREATE, 0600)
+		fh, err := os.OpenFile(ratingFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -2,6 +2,7 @@ package songrep
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"math/rand"
@@ -18,9 +19,9 @@ type Game struct {
 type Song struct {
 	Title          string
 	Game           *Game
-	DurationSec    int
-	StartLoopMilli int
-	EndLoopMilli   int
+	DurationSec    float32
+	LoopStartMicro int
+	LoopEndMicro   int
 	Path           string
 	AbsPath        string
 	IsPlayed       bool
@@ -41,12 +42,14 @@ type SongRepository interface {
 }
 
 type parsedSongs struct {
-	Title          string `json:"title"`
-	GameTitle      string `json:"game_title"`
-	DurationSec    int    `json:"duration"`
-	StartLoopMilli int    `json:"start_loop"`
-	EndLoopMilli   int    `json:"end_loop"`
-	Path           string `json:"path"`
+	Path           string  `json:"path"`
+	Title          string  `json:"title"`
+	GameTitle      string  `json:"game_title"`
+	DurationSec    float32 `json:"duration"`
+	LoopStartMicro int     `json:"loop_start"`
+	LoopEndMicro   int     `json:"loop_end"`
+	Size           int     `json:"size"`
+	Error          bool    `json:"error"`
 }
 
 type parseFileResult struct {
@@ -118,21 +121,34 @@ func parseFile(fh io.Reader, songs *[]parsedSongs) {
 
 func convertImportedSongs(parsed []parseFileResult) []Song {
 	songCount := countParsedSongs(parsed)
-	songs := make([]Song, songCount)
+	songs := make([]Song, 0, songCount)
 	games := make(map[string]*Game)
 
-	i := 0
 	for _, p := range parsed {
 		for _, s := range p.songs {
+			if s.Error || s.Size == 0 {
+				continue
+			}
+			fullPath := filepath.Join(p.absPath, s.Path)
 			if _, found := games[s.GameTitle]; !found {
 				game := Game{Title: s.GameTitle}
 				games[s.GameTitle] = &game
 			}
-			songs[i] = makeSongFromImported(s, games[s.GameTitle], filepath.Join(p.absPath, s.Path))
-			i++
+			songs = append(songs, makeSongFromImported(s, games[s.GameTitle], fullPath))
 		}
 	}
 	return songs
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false
+	} else {
+		log.Fatalln(err)
+		return false // because goland complains
+	}
 }
 
 func countParsedSongs(parsed []parseFileResult) int {
@@ -148,8 +164,8 @@ func makeSongFromImported(parsed parsedSongs, game *Game, absPath string) Song {
 		Title:          parsed.Title,
 		Game:           game,
 		DurationSec:    parsed.DurationSec,
-		StartLoopMilli: parsed.StartLoopMilli,
-		EndLoopMilli:   parsed.EndLoopMilli,
+		LoopStartMicro: parsed.LoopStartMicro,
+		LoopEndMicro:   parsed.LoopEndMicro,
 		Path:           parsed.Path,
 		AbsPath:        absPath,
 	}
@@ -171,7 +187,7 @@ func (r *InMemorySongRepository) getFirstFilteredSong(filters Filters, indices [
 		if song.IsPlayed {
 			continue
 		}
-		if filters.MinDurationSec > 0 && song.DurationSec < filters.MinDurationSec {
+		if filters.MinDurationSec > 0 && song.DurationSec < float32(filters.MinDurationSec) {
 			continue
 		}
 		if filters.TitleContains != "" && !strings.Contains(song.Title, filters.TitleContains) {
