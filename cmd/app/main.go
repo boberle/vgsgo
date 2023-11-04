@@ -1,37 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"golang.org/x/term"
 	playerpck "gosmash/player"
 	"gosmash/songrep"
 	"log"
 	"os"
+	"strings"
 	"time"
 )
 
 func main() {
 
 	args := getArgs()
-
-	var ratingRep songrep.InMemoryRatingRepository
-	if _, err := os.Stat(args.ratings); err == nil {
-		fh, err := os.Open(args.ratings)
-		if err != nil {
-			log.Fatal(err)
-		}
-		rep := songrep.RatingsFromJSON(fh)
-		rep.File = args.ratings
-		_ = fh.Close()
-		ratingRep = rep
-	} else {
-		ratingRep = songrep.InMemoryRatingRepository{File: args.ratings}
-	}
-
-	songRep := songrep.InMemorySongRepository{
-		Songs:            songrep.SongsFromFiles(args.dbFiles),
-		RatingRepository: ratingRep,
-	}
 
 	player := playerpck.Player{
 		Cmd:     "/usr/bin/mplayer",
@@ -49,7 +33,8 @@ func main() {
 		GameTitleContains: args.gameTitleContains,
 	}
 
-	run(&songRep, &ratingRep, player, filters, args.ratings)
+	conf := getConfiguration(args)
+	run(conf.songRep, conf.ratingRep, player, filters, args.ratings)
 
 }
 
@@ -106,17 +91,85 @@ func getArgs() Arguments {
 	flag.Parse()
 
 	if flag.NArg() == 0 {
-		_, _ = fmt.Fprintln(os.Stderr, "You must provide one or more db files")
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	if args.ratings == "" {
-		_, _ = fmt.Fprintln(os.Stderr, "Argument -rating-file is required")
+		_, _ = fmt.Fprintln(os.Stderr, "You must provide one or more db files, or an url to a server")
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	args.dbFiles = flag.Args()
 	return args
+}
+
+type AppConfiguration struct {
+	ratingRep songrep.RatingRepository
+	songRep   songrep.SongRepository
+}
+
+func getConfiguration(args Arguments) AppConfiguration {
+	if len(args.dbFiles) == 1 && strings.HasPrefix(args.dbFiles[0], "http") {
+		return getRemoteConfiguration(args)
+	} else {
+		return getLocalConfiguration(args)
+	}
+}
+
+func getLocalConfiguration(args Arguments) AppConfiguration {
+	var ratingRep songrep.InMemoryRatingRepository
+	if _, err := os.Stat(args.ratings); err == nil {
+		fh, err := os.Open(args.ratings)
+		if err != nil {
+			log.Fatal(err)
+		}
+		rep := songrep.RatingsFromJSON(fh)
+		rep.File = args.ratings
+		_ = fh.Close()
+		ratingRep = rep
+	} else {
+		ratingRep = songrep.InMemoryRatingRepository{File: args.ratings}
+	}
+
+	songRep := songrep.InMemorySongRepository{
+		Songs:            songrep.SongsFromFiles(args.dbFiles),
+		RatingRepository: ratingRep,
+	}
+
+	return AppConfiguration{
+		ratingRep: &ratingRep,
+		songRep:   &songRep,
+	}
+}
+
+func getRemoteConfiguration(args Arguments) AppConfiguration {
+	var username, password string
+	s := bufio.NewScanner(os.Stdin)
+
+	fmt.Print("Enter your username: ")
+	if s.Scan() {
+		username = s.Text()
+	}
+
+	fmt.Print("Enter your password: ")
+	bytePasswd, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	password = string(bytePasswd)
+
+	ratingRep := songrep.RemoteRatingRepository{
+		ServerBaseUrl: args.dbFiles[0],
+		Username:      username,
+		Password:      password,
+	}
+
+	songRep := songrep.RemoteSongRepository{
+		ServerBaseUrl: args.dbFiles[0],
+		Username:      username,
+		Password:      password,
+		SongDir:       "/tmp/vgsgo/songs",
+	}
+
+	return AppConfiguration{
+		ratingRep: &ratingRep,
+		songRep:   &songRep,
+	}
 }
