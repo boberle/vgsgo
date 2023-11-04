@@ -21,10 +21,11 @@ func main() {
 			log.Fatal(err)
 		}
 		rep := songrep.RatingsFromJSON(fh)
+		rep.File = args.ratings
 		_ = fh.Close()
 		ratingRep = &rep
 	} else {
-		ratingRep = &songrep.InMemoryRatingRepository{}
+		ratingRep = &songrep.InMemoryRatingRepository{File: args.ratings}
 	}
 
 	songRep := songrep.InMemorySongRepository{
@@ -71,14 +72,6 @@ func run(songRep songrep.SongRepository, ratingRep songrep.RatingRepository, pla
 		if actions.Resume {
 			player.PlayIndefinitely(song)
 		}
-
-		// save rating db
-		fh, err := os.OpenFile(ratingFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ratingRep.WriteJSON(fh)
-		_ = fh.Close()
 
 		if actions.Quit {
 			return

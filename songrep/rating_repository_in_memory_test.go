@@ -66,10 +66,10 @@ func TestRatingsFromJSON(t *testing.T) {
 		want InMemoryRatingRepository
 		data string
 	}{
-		{"0 play", InMemoryRatingRepository{[]PlayedSong{}}, "[]"},
-		{"1 play", InMemoryRatingRepository{[]PlayedSong{{"path", []Play{{123, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":123,\"rating\":2}]}]"},
-		{"2 plays, 1 song", InMemoryRatingRepository{[]PlayedSong{{"path", []Play{{456, 1}, {789, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":456,\"rating\":1},{\"timestamp\":789,\"rating\":2}]}]"},
-		{"2 plays, 2 song", InMemoryRatingRepository{[]PlayedSong{{"path", []Play{{123, 1}}}, {"path2", []Play{{456, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":123,\"rating\":1}]},{\"path\":\"path2\",\"plays\":[{\"timestamp\":456,\"rating\":2}]}]"},
+		{"0 play", InMemoryRatingRepository{PlayedSongs: []PlayedSong{}}, "[]"},
+		{"1 play", InMemoryRatingRepository{PlayedSongs: []PlayedSong{{"path", []Play{{123, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":123,\"rating\":2}]}]"},
+		{"2 plays, 1 song", InMemoryRatingRepository{PlayedSongs: []PlayedSong{{"path", []Play{{456, 1}, {789, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":456,\"rating\":1},{\"timestamp\":789,\"rating\":2}]}]"},
+		{"2 plays, 2 song", InMemoryRatingRepository{PlayedSongs: []PlayedSong{{"path", []Play{{123, 1}}}, {"path2", []Play{{456, 2}}}}}, "[{\"path\":\"path\",\"plays\":[{\"timestamp\":123,\"rating\":1}]},{\"path\":\"path2\",\"plays\":[{\"timestamp\":456,\"rating\":2}]}]"},
 	}
 	for _, tt := range tests {
 		r := strings.NewReader(tt.data)

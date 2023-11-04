@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"os"
 )
 
 type InMemoryRatingRepository struct {
 	PlayedSongs []PlayedSong
+	File        string
 }
 
 func RatingsFromJSON(reader io.Reader) InMemoryRatingRepository {
@@ -40,6 +42,20 @@ func (r *InMemoryRatingRepository) AddPlay(song Song, timestamp int, rating int)
 	} else {
 		r.PlayedSongs = append(r.PlayedSongs, PlayedSong{Path: song.Path, Plays: []Play{{timestamp, rating}}})
 	}
+
+}
+
+func (r *InMemoryRatingRepository) Save() {
+	if len(r.File) == 0 {
+		return
+	}
+
+	fh, err := os.OpenFile(r.File, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		log.Fatal(err)
+	}
+	r.WriteJSON(fh)
+	_ = fh.Close()
 }
 
 func (r *InMemoryRatingRepository) Rating(song Song) (float32, bool) {

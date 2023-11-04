@@ -1,9 +1,5 @@
 package songrep
 
-import (
-	"io"
-)
-
 type PlayedSong struct {
 	Path  string `json:"path"`
 	Plays []Play `json:"plays"`
@@ -17,5 +13,4 @@ type Play struct {
 type RatingRepository interface {
 	Rating(song Song) (float32, bool)
 	AddPlay(song Song, timestamp int, rating int)
-	WriteJSON(writer io.Writer)
 }
