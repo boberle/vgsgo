@@ -14,7 +14,7 @@ func main() {
 
 	args := getArgs()
 
-	var ratingRep songrep.RatingRepository
+	var ratingRep songrep.InMemoryRatingRepository
 	if _, err := os.Stat(args.ratings); err == nil {
 		fh, err := os.Open(args.ratings)
 		if err != nil {
@@ -23,9 +23,9 @@ func main() {
 		rep := songrep.RatingsFromJSON(fh)
 		rep.File = args.ratings
 		_ = fh.Close()
-		ratingRep = &rep
+		ratingRep = rep
 	} else {
-		ratingRep = &songrep.InMemoryRatingRepository{File: args.ratings}
+		ratingRep = songrep.InMemoryRatingRepository{File: args.ratings}
 	}
 
 	songRep := songrep.InMemorySongRepository{
@@ -49,7 +49,7 @@ func main() {
 		GameTitleContains: args.gameTitleContains,
 	}
 
-	run(&songRep, ratingRep, player, filters, args.ratings)
+	run(&songRep, &ratingRep, player, filters, args.ratings)
 
 }
 

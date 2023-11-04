@@ -11,6 +11,5 @@ type Play struct {
 }
 
 type RatingRepository interface {
-	Rating(song Song) (float32, bool)
 	AddPlay(song Song, timestamp int, rating int)
 }

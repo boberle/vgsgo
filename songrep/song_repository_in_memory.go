@@ -30,7 +30,7 @@ type parseFileResult struct {
 
 type InMemorySongRepository struct {
 	Songs            []Song
-	RatingRepository RatingRepository
+	RatingRepository InMemoryRatingRepository
 }
 
 func SongsFromFiles(files []string) []Song {
