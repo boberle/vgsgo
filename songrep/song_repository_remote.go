@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 type RemoteSongRepository struct {
@@ -21,11 +22,10 @@ type RemoteSongRepository struct {
 func (r *RemoteSongRepository) GetRandomSong(filters Filters) (Song, bool) {
 	// TODO: filters
 	randomSongUrl := r.ServerBaseUrl + "/api/songs/random/"
-	song, id, found := downloadSongMetadata(randomSongUrl, r.SongDir, r.Username, r.Password)
+	song, id, found := downloadSongMetadata(randomSongUrl, r.SongDir, r.Username, r.Password, filters)
 	if !found {
 		return Song{}, false
 	}
-
 	songFileDir := filepath.Dir(song.AbsPath)
 	err := os.MkdirAll(songFileDir, 0700)
 	if err != nil {
@@ -47,10 +47,31 @@ func setAuthHeader(req *http.Request, username, password string) {
 	req.Header.Set("Authorization", "Basic "+authHeader)
 }
 
-func downloadSongMetadata(url, songDir, username, password string) (Song, string, bool) {
+func downloadSongMetadata(url, songDir, username, password string, filters Filters) (Song, string, bool) {
 	req, _ := http.NewRequest("GET", url, nil)
 	setAuthHeader(req, username, password)
 	client := &http.Client{}
+
+	values := req.URL.Query()
+	if filters.MinRating > 0. {
+		values.Set("min_rating", strconv.Itoa(int(filters.MinRating)))
+	}
+	if filters.MinDurationSec > 0. {
+		values.Set("min_duration", strconv.Itoa(filters.MinDurationSec))
+	}
+	if filters.OnlyHasRating {
+		values.Set("only_has_rating", "true")
+	}
+	if filters.OnlyHasNoRating {
+		values.Set("only_has_no_rating", "true")
+	}
+	if len(filters.TitleContains) > 0 {
+		values.Set("title_contains", filters.TitleContains)
+	}
+	if len(filters.GameTitleContains) > 0 {
+		values.Set("game_title_contains", filters.GameTitleContains)
+	}
+	req.URL.RawQuery = values.Encode()
 
 	resp, err := client.Do(req)
 	if err != nil {
