@@ -73,7 +73,7 @@ func TestInMemorySongRepository_getFirstFilteredSong(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := InMemorySongRepository{
 				Songs:            songs,
-				RatingRepository: &ratings,
+				RatingRepository: ratings,
 			}
 			gotIndex, gotFound := r.getFirstFilteredSong(tt.filters, []int{2, 1, 0, 3})
 			assert.Equalf(t, tt.wantIndex, gotIndex, "GetRandomSong(%v)", tt.filters)
@@ -100,13 +100,14 @@ func TestInMemorySongRepository_GetRandomSong(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := InMemorySongRepository{
 				Songs:            songs,
-				RatingRepository: &InMemoryRatingRepository{},
+				RatingRepository: InMemoryRatingRepository{},
 			}
 			gotSong, gotFound := r.GetRandomSong(tt.filters)
 			if gotFound && gotSong.Title != "bar def" && gotSong.Title != "bar ghi" {
 				t.Errorf("song not found")
 			}
 			assert.Equalf(t, tt.wantFound, gotFound, "GetRandomSong(%v)", tt.filters)
+			assert.Equalf(t, tt.wantFound, gotSong.IsPlayed, "GetRandomSong(%v)", tt.filters)
 		})
 	}
 }
@@ -161,36 +162,4 @@ func TestSongsFromFiles(t *testing.T) {
 	}
 	got := SongsFromFiles(files)
 	td.Cmp(t, got, want)
-}
-
-func TestInMemorySongRepository_MarkAsPlayed(t *testing.T) {
-
-	tests := []struct {
-		name      string
-		song      Song
-		wantSongs []Song
-		wantError bool
-	}{
-		{"no song", Song{Path: "xyz"}, []Song{Song{Path: "abc"}, Song{Path: "def"}}, true},
-		{"first played", Song{Path: "abc"}, []Song{Song{Path: "abc", IsPlayed: true}, Song{Path: "def"}}, false},
-		{"second played", Song{Path: "def"}, []Song{Song{Path: "abc"}, Song{Path: "def", IsPlayed: true}}, false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := InMemorySongRepository{
-				Songs: []Song{
-					Song{Path: "abc"},
-					Song{Path: "def"},
-				},
-			}
-			err := r.MarkAsPlayed(tt.song)
-			if tt.wantError && err == nil {
-				t.Errorf("%s, expected error", tt.name)
-			}
-			if !tt.wantError && err != nil {
-				t.Errorf("%s, not expecting error, got %v", tt.name, err)
-			}
-			assert.Equal(t, tt.wantSongs, r.Songs)
-		})
-	}
 }

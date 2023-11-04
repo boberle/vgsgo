@@ -147,7 +147,9 @@ func (r *InMemorySongRepository) GetRandomSong(filters Filters) (Song, bool) {
 	indices := getShuffledIndices(l, time.Now().Unix())
 	index, found := r.getFirstFilteredSong(filters, indices)
 	if found {
-		return r.Songs[index], true
+		song := r.Songs[index]
+		song.IsPlayed = true
+		return song, true
 	}
 	return Song{}, false
 }
@@ -193,14 +195,4 @@ func getShuffledIndices(n int, seed int64) []int {
 		rv[i], rv[j] = rv[j], rv[i]
 	})
 	return rv
-}
-
-func (r *InMemorySongRepository) MarkAsPlayed(song Song) error {
-	for i, s := range r.Songs {
-		if s.Path == song.Path {
-			r.Songs[i].IsPlayed = true
-			return nil
-		}
-	}
-	return SongNotFound{song}
 }

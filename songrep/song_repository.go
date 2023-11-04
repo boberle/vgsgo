@@ -26,7 +26,6 @@ type Filters struct {
 
 type SongRepository interface {
 	GetRandomSong(filters Filters) (Song, bool)
-	MarkAsPlayed(song Song) error
 }
 
 type SongNotFound struct {

@@ -61,10 +61,6 @@ func run(songRep songrep.SongRepository, ratingRep songrep.RatingRepository, pla
 			return
 		}
 		player.Play(song)
-		err := songRep.MarkAsPlayed(song)
-		if err != nil {
-			log.Println(err)
-		}
 
 		actions := player.Rate()
 		rating := actions.Value
