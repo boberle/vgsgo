@@ -3,7 +3,7 @@ package player
 import (
 	"bufio"
 	"fmt"
-	"gosmash/songrep"
+	"vgsgo/songrep"
 	"io"
 	"log"
 	"os"

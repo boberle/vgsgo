@@ -3,7 +3,7 @@ package player
 import (
 	"bytes"
 	"github.com/stretchr/testify/assert"
-	"gosmash/songrep"
+	"vgsgo/songrep"
 	"strings"
 	"testing"
 )

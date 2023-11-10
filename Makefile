@@ -1,6 +1,6 @@
-build:
+vgsgo:
 	mkdir -p build
-	go build -o build/vgsplay cmd/app/main.go
+	go build -o build/vgsgo cmd/app/main.go
 
 test:
 	go test -v ./...

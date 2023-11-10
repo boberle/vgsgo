@@ -1,4 +1,4 @@
-module gosmash
+module vgsgo
 
 go 1.19
 
