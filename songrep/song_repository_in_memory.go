@@ -147,8 +147,8 @@ func (r *InMemorySongRepository) GetRandomSong(filters Filters) (Song, bool) {
 	indices := getShuffledIndices(l, time.Now().Unix())
 	index, found := r.getFirstFilteredSong(filters, indices)
 	if found {
+		r.Songs[index].IsPlayed = true
 		song := r.Songs[index]
-		song.IsPlayed = true
 		return song, true
 	}
 	return Song{}, false
