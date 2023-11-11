@@ -16,7 +16,7 @@ type Player struct {
 	Cmd            string
 	Input          io.Reader
 	Output         io.Writer
-	MaxPlay        int
+	MaxPlays       int
 	MaxPlayTimeSec int
 }
 
@@ -38,7 +38,7 @@ func (p Player) Play(song songrep.Song) {
 
 func (p Player) PlayIndefinitely(song songrep.Song) {
 	player := p
-	player.MaxPlay = 0
+	player.MaxPlays = 0
 	args := player.getArgsWithMaxPlays(song)
 	p.exec(args)
 }
@@ -98,7 +98,7 @@ func (p Player) getArgsWithMaxPlays(song songrep.Song) []string {
 	}
 
 	// other run (start from startLoop)
-	if p.MaxPlay != 1 {
+	if p.MaxPlays != 1 {
 		args = append(args, song.AbsPath)
 		if song.LoopStartMicro != 0 {
 			args = append(args, "-ss")
@@ -109,10 +109,10 @@ func (p Player) getArgsWithMaxPlays(song songrep.Song) []string {
 			args = append(args, fmt.Sprintf("%f", float32(song.LoopEndMicro)/1000000.0))
 		}
 		args = append(args, "-loop")
-		if p.MaxPlay == 0 {
+		if p.MaxPlays == 0 {
 			args = append(args, "0")
 		} else {
-			args = append(args, strconv.Itoa(p.MaxPlay-1))
+			args = append(args, strconv.Itoa(p.MaxPlays-1))
 		}
 	}
 	return args

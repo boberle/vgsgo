@@ -21,7 +21,7 @@ func main() {
 		Cmd:            "/usr/bin/mplayer",
 		Input:          os.Stdin,
 		Output:         os.Stdout,
-		MaxPlay:        args.maxPlays,
+		MaxPlays:       args.maxPlays,
 		MaxPlayTimeSec: args.maxPlayTime,
 	}
 

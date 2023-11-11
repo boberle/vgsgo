@@ -52,8 +52,8 @@ func TestPlayer_getArgsWithMaxPlays(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := Player{
-				Cmd:     "mplayer",
-				MaxPlay: tt.maxPlay,
+				Cmd:      "mplayer",
+				MaxPlays: tt.maxPlay,
 			}
 			assert.Equal(t, tt.want, p.getArgsWithMaxPlays(tt.song))
 		})
