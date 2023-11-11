@@ -3,20 +3,21 @@ package player
 import (
 	"bufio"
 	"fmt"
-	"vgsgo/songrep"
 	"io"
 	"log"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"vgsgo/songrep"
 )
 
 type Player struct {
-	Cmd     string
-	Input   io.Reader
-	Output  io.Writer
-	MaxPlay int
+	Cmd            string
+	Input          io.Reader
+	Output         io.Writer
+	MaxPlay        int
+	MaxPlayTimeSec int
 }
 
 type RatingAction struct {
@@ -26,14 +27,19 @@ type RatingAction struct {
 }
 
 func (p Player) Play(song songrep.Song) {
-	args := p.getArgs(song)
+	var args []string
+	if p.MaxPlayTimeSec != 0 {
+		args = p.getArgsWithMaxPlayTime(song)
+	} else {
+		args = p.getArgsWithMaxPlays(song)
+	}
 	p.exec(args)
 }
 
 func (p Player) PlayIndefinitely(song songrep.Song) {
 	player := p
 	player.MaxPlay = 0
-	args := player.getArgs(song)
+	args := player.getArgsWithMaxPlays(song)
 	p.exec(args)
 }
 
@@ -80,7 +86,7 @@ func (p Player) Rate() RatingAction {
 	}
 }
 
-func (p Player) getArgs(song songrep.Song) []string {
+func (p Player) getArgsWithMaxPlays(song songrep.Song) []string {
 	args := make([]string, 0, 10)
 	args = append(args, p.Cmd)
 
@@ -109,6 +115,63 @@ func (p Player) getArgs(song songrep.Song) []string {
 			args = append(args, strconv.Itoa(p.MaxPlay-1))
 		}
 	}
+	return args
+}
+
+func (p Player) getArgsWithMaxPlayTime(song songrep.Song) []string {
+	if p.MaxPlayTimeSec == 0 {
+		panic("MaxPlayTimeSec can't be 0")
+	}
+
+	args := make([]string, 0, 10)
+	args = append(args, p.Cmd)
+
+	// first run (start from 0)
+	args = append(args, song.AbsPath)
+	loopEndSec := float32(song.LoopEndMicro) / 1000000.0
+	var elapsed = song.DurationSec
+	if song.DurationSec > float32(p.MaxPlayTimeSec) {
+		args = append(args, "-endpos")
+		args = append(args, fmt.Sprintf("%d", p.MaxPlayTimeSec))
+		elapsed = float32(p.MaxPlayTimeSec)
+	} else if loopEndSec != 0.0 {
+		args = append(args, "-endpos")
+		args = append(args, fmt.Sprintf("%f", loopEndSec))
+		elapsed = loopEndSec
+	}
+
+	// other run (start from startLoop)
+	loopStartSec := float32(song.LoopStartMicro) / 1000000.0
+	var playTime float32
+	if loopEndSec == 0 {
+		playTime = song.DurationSec - loopStartSec
+	} else {
+		playTime = loopEndSec - loopStartSec
+	}
+	for elapsed+playTime < float32(p.MaxPlayTimeSec) {
+		args = append(args, song.AbsPath)
+		if song.LoopStartMicro != 0 {
+			args = append(args, "-ss")
+			args = append(args, fmt.Sprintf("%f", loopStartSec))
+		}
+		if song.LoopEndMicro != 0 {
+			args = append(args, "-endpos")
+			args = append(args, fmt.Sprintf("%f", loopEndSec))
+		}
+		elapsed += playTime
+	}
+
+	// last run
+	if float32(p.MaxPlayTimeSec)-elapsed > 2.0 {
+		args = append(args, song.AbsPath)
+		if song.LoopStartMicro != 0 {
+			args = append(args, "-ss")
+			args = append(args, fmt.Sprintf("%f", loopStartSec))
+		}
+		args = append(args, "-endpos")
+		args = append(args, fmt.Sprintf("%.0f", float32(p.MaxPlayTimeSec)-elapsed+loopStartSec))
+	}
+
 	return args
 }
 

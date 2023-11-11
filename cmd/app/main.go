@@ -5,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"golang.org/x/term"
-	playerpck "vgsgo/player"
-	"vgsgo/songrep"
 	"log"
 	"os"
 	"strings"
 	"time"
+	playerpck "vgsgo/player"
+	"vgsgo/songrep"
 )
 
 func main() {
@@ -18,10 +18,11 @@ func main() {
 	args := getArgs()
 
 	player := playerpck.Player{
-		Cmd:     "/usr/bin/mplayer",
-		Input:   os.Stdin,
-		Output:  os.Stdout,
-		MaxPlay: args.maxPlays,
+		Cmd:            "/usr/bin/mplayer",
+		Input:          os.Stdin,
+		Output:         os.Stdout,
+		MaxPlay:        args.maxPlays,
+		MaxPlayTimeSec: args.maxPlayTime,
 	}
 
 	filters := songrep.Filters{
@@ -64,6 +65,7 @@ type Arguments struct {
 	dbFiles           []string
 	ratings           string
 	maxPlays          int
+	maxPlayTime       int
 	continuousPlay    bool
 	playLast          bool
 	minRating         float64
@@ -79,6 +81,7 @@ func getArgs() Arguments {
 
 	flag.StringVar(&args.ratings, "rating-file", "", "json file where ratings are store")
 	flag.IntVar(&args.maxPlays, "max-plays", 0, "maximum number of plays (default is 0, infinity)")
+	flag.IntVar(&args.maxPlayTime, "max-play-time", 0, "maximum time to play (default is 0, infinity)")
 	flag.BoolVar(&args.continuousPlay, "continuous", false, "don't stop to ask rating")
 	flag.BoolVar(&args.playLast, "play-last", false, "don't shuffle songs, play the last ones")
 	flag.Float64Var(&args.minRating, "min-rating", 0, "minimum rating. Add --only-has-rating to limit to songs that have ratings")
@@ -93,6 +96,11 @@ func getArgs() Arguments {
 	if flag.NArg() == 0 {
 		_, _ = fmt.Fprintln(os.Stderr, "You must provide one or more db files, or an url to a server")
 		flag.Usage()
+		os.Exit(1)
+	}
+
+	if args.maxPlays != 0 && args.maxPlayTime != 0 {
+		fmt.Println("You can't use -max-plays and -max-play-time at the same time")
 		os.Exit(1)
 	}
 
