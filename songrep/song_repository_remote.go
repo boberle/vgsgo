@@ -33,7 +33,7 @@ func (r *RemoteSongRepository) GetRandomSong(filters Filters) (Song, bool) {
 	}
 
 	// TODO: don't download if already there
-	songFileUrl := r.ServerBaseUrl + "/api/songs/" + id + "/file"
+	songFileUrl := r.ServerBaseUrl + "/api/songs/" + id + "/file/"
 	err = downloadSongFile(songFileUrl, song.AbsPath, r.Username, r.Password)
 	if err != nil {
 		log.Fatalln(err)
