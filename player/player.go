@@ -18,6 +18,7 @@ type Player struct {
 	Output         io.Writer
 	MaxPlays       int
 	MaxPlayTimeSec int
+	ContinuousPlay bool
 }
 
 type RatingAction struct {

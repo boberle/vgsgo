@@ -23,6 +23,7 @@ func main() {
 		Output:         os.Stdout,
 		MaxPlays:       args.maxPlays,
 		MaxPlayTimeSec: args.maxPlayTime,
+		ContinuousPlay: args.continuousPlay,
 	}
 
 	filters := songrep.Filters{
@@ -48,16 +49,21 @@ func run(songRep songrep.SongRepository, ratingRep songrep.RatingRepository, pla
 		}
 		player.Play(song)
 
-		actions := player.Rate()
-		rating := actions.Value
-		ratingRep.AddPlay(song, int(time.Now().Unix()), rating)
-		if actions.Resume {
-			player.PlayIndefinitely(song)
+		if player.ContinuousPlay {
+			ratingRep.AddPlay(song, int(time.Now().Unix()), 0)
+		} else {
+			actions := player.Rate()
+			rating := actions.Value
+			ratingRep.AddPlay(song, int(time.Now().Unix()), rating)
+			if actions.Resume {
+				player.PlayIndefinitely(song)
+			}
+
+			if actions.Quit {
+				return
+			}
 		}
 
-		if actions.Quit {
-			return
-		}
 	}
 }
 
